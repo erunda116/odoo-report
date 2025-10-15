@@ -4,9 +4,22 @@ template = env['mail.template'].browse(82)
 # select users 
 users = env['res.users'].browse([3])  # подставьте нужный ID
 
+# Calculate tomorrow's date using available datetime library
+tomorrow = (datetime.datetime.now() + datetime.timedelta(days=1)).date()
+
 for user in users:
-    tasks = env['project.task'].search([('user_ids', 'in', [user.id]), ('stage_id', '!=', False)])
-    leads = env['crm.lead'].search([('user_id', '=', user.id), ('stage_id', '!=', False)])
+    # Filter tasks by "To Do" and "In Work" stages
+    tasks = env['project.task'].search([
+        ('user_ids', 'in', [user.id]), 
+        ('stage_id.name', 'in', ['To Do', 'In Work'])
+    ])
+    
+    # Filter leads by calls scheduled for tomorrow
+    leads = env['crm.lead'].search([
+        ('user_id', '=', user.id),
+        ('activity_ids.date_deadline', '=', tomorrow),
+        ('activity_ids.activity_type_id.category', '=', 'phonecall')
+    ])
     
     body_html = f"<p>Hello {user.name},</p><p>Here is your daily report with your tasks:</p><ul>"
     for task in tasks:
