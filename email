@@ -1,0 +1,23 @@
+# template ID
+template = env['mail.template'].browse(82)
+
+# select users 
+users = env['res.users'].browse([3])  # подставьте нужный ID
+
+for user in users:
+    tasks = env['project.task'].search([('user_ids', 'in', [user.id]), ('stage_id', '!=', False)])
+    leads = env['crm.lead'].search([('user_id', '=', user.id), ('stage_id', '!=', False)])
+    
+    body_html = f"<p>Hello {user.name},</p><p>Here is your daily report with your tasks:</p><ul>"
+    for task in tasks:
+        body_html += f"<li>{task.name} | Project: {task.project_id.name} | Deadline: {task.date_deadline} | Status: {task.stage_id.name}</li>"
+    body_html += "</ul><p>Leads to Contact:</p><ul>"
+    for lead in leads:
+        body_html += f"<li>{lead.name} | Company: {lead.partner_id.name} | Contact: {lead.contact_name} | Status: {lead.stage_id.name}</li>"
+    body_html += "</ul>"
+
+    template.with_context().send_mail(
+        user.id,
+        email_values={'body_html': body_html},
+        force_send=True
+    )
